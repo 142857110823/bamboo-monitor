@@ -1,0 +1,116 @@
+/* 大熊猫主食竹智能监测系统 - 清新专业浅色主题 */
+
+/* 全局字体与页面基础 */
+.stApp {
+    font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+}
+
+/* 隐藏 Streamlit 默认的 hamburger 菜单和 footer */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+
+/* 页面标题样式 */
+h1 {
+    color: #1B5E20 !important;
+    font-weight: 700 !important;
+    border-bottom: 3px solid #2E7D32;
+    padding-bottom: 0.3em;
+}
+
+h2, h3 {
+    color: #2E7D32 !important;
+    font-weight: 600 !important;
+}
+
+/* 侧边栏美化 */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #E8F5E9 0%, #FAFFFE 100%);
+    border-right: 2px solid #C8E6C9;
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: #1B5E20 !important;
+}
+
+/* KPI 指标卡片样式 */
+[data-testid="stMetric"] {
+    background-color: #FFFFFF;
+    border: 1px solid #C8E6C9;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+[data-testid="stMetric"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(46, 125, 50, 0.15);
+}
+
+[data-testid="stMetricLabel"] {
+    color: #558B2F !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: #1B5E20 !important;
+    font-weight: 700 !important;
+}
+
+/* 信息提示框美化 */
+.stAlert {
+    border-radius: 10px !important;
+    border-left: 4px solid #2E7D32 !important;
+}
+
+/* 按钮样式 */
+.stButton > button {
+    background-color: #2E7D32 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.stButton > button:hover {
+    background-color: #1B5E20 !important;
+    transform: translateY(-1px);
+}
+
+/* 文件上传组件美化 */
+[data-testid="stFileUploader"] {
+    border: 2px dashed #81C784 !important;
+    border-radius: 12px !important;
+    padding: 10px !important;
+}
+
+/* 数据表格美化 */
+.stDataFrame {
+    border-radius: 10px !important;
+    overflow: hidden;
+}
+
+/* 选项卡样式 */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    border-radius: 8px 8px 0 0;
+    padding: 8px 20px;
+    font-weight: 600;
+}
+
+/* 进度条颜色 */
+.stProgress > div > div > div > div {
+    background-color: #2E7D32 !important;
+}
+
+/* 分隔线 */
+hr {
+    border-color: #C8E6C9 !important;
+}
