@@ -2,10 +2,6 @@
 数据库适配层
 本地开发使用 SQLite，云端部署可切换为 PostgreSQL (Supabase)
 对外暴露统一接口，上层代码无需关心底层实现。
-
-修复审查报告指出的 database.py:28 事务处理不一致问题：
-- 所有写操作统一使用 try/except + commit/rollback
-- SQLite 连接使用 WAL 模式提升并发性能
 """
 import sqlite3
 import os
@@ -56,7 +52,6 @@ def get_connection():
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         conn.row_factory = sqlite3.Row
-        # 启用 WAL 模式提升并发读性能
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA busy_timeout=5000")
         return conn
@@ -373,15 +368,10 @@ def get_yearly_bamboo_area() -> list:
     """
     获取数据库中实际存在的年份和竹林面积数据
     基于真实的分析记录，按年份汇总
-    
-    Returns:
-        list: [{'year': int, 'area_ha': float}, ...] 按年份排序
     """
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # 从分析记录中提取年份和竹林面积
-    # 使用strftime提取年份（SQLite语法）
+
     cursor.execute("""
         SELECT 
             CAST(strftime('%Y', created_at) AS INTEGER) as year,
@@ -392,9 +382,9 @@ def get_yearly_bamboo_area() -> list:
         GROUP BY strftime('%Y', created_at)
         ORDER BY year ASC
     """)
-    
+
     rows = cursor.fetchall()
-    
+
     result = []
     for row in rows:
         year, avg_area_ha, record_count = row
@@ -404,5 +394,5 @@ def get_yearly_bamboo_area() -> list:
                 'area_ha': round(float(avg_area_ha), 2),
                 'record_count': int(record_count)
             })
-    
+
     return result
