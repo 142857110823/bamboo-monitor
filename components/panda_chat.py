@@ -3,9 +3,21 @@
 通过 st.components.v1.html 注入到 Streamlit 主页面，
 调用本地部署的通义千问模型 (Qwen-1_8B-Chat) 提供交互式AI问答。
 """
+import os
+import base64
 import streamlit.components.v1 as components
 
-PANDA_CHAT_HTML = """
+_AVATAR_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "panda_avatar.png")
+
+def _get_avatar_data_uri():
+    """读取熊猫头像图片并返回 base64 data URI。"""
+    if os.path.exists(_AVATAR_PATH):
+        with open(_AVATAR_PATH, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        return f"data:image/png;base64,{b64}"
+    return "https://img.icons8.com/emoji/96/panda-emoji.png"
+
+_PANDA_CHAT_HTML_TEMPLATE = """
 <script>
 (function() {
     const parentDoc = window.parent.document;
@@ -28,14 +40,15 @@ PANDA_CHAT_HTML = """
         #panda-avatar-btn {
             width: 72px;
             height: 72px;
-            border-radius: 50%;
+            border-radius: 12px;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             background: #fff;
-            padding: 6px;
+            padding: 4px;
             display: block;
             border: 2px solid #4CAF50;
+            object-fit: cover;
         }
         #panda-avatar-btn:hover {
             transform: scale(1.08);
@@ -199,7 +212,7 @@ PANDA_CHAT_HTML = """
                 <button id="panda-chat-send">&#x53D1;&#x9001;</button>
             </div>
         </div>
-        <img id="panda-avatar-btn" src="https://img.icons8.com/emoji/96/panda-emoji.png" alt="&#x718A;&#x732B;&#x5C0F;&#x52A9;&#x624B;" draggable="false" />
+        <img id="panda-avatar-btn" src="%%AVATAR_URI%%" alt="&#x718A;&#x732B;&#x5C0F;&#x52A9;&#x624B;" draggable="false" />
     `;
     parentDoc.body.appendChild(container);
 
@@ -370,4 +383,6 @@ def render_panda_assistant():
     """在Streamlit页面中注入悬浮熊猫小助手AI聊天组件。
     组件通过 window.parent.document 注入到主页面，不受iframe限制。
     """
-    components.html(PANDA_CHAT_HTML, height=0, width=0)
+    avatar_uri = _get_avatar_data_uri()
+    html = _PANDA_CHAT_HTML_TEMPLATE.replace("%%AVATAR_URI%%", avatar_uri)
+    components.html(html, height=0, width=0)
