@@ -203,3 +203,7 @@ with tab_tasks:
                         st.rerun()
     else:
         st.info("暂无巡护任务。在预警清单中点击「生成巡护任务」可创建新任务。")
+
+# ============ 熊猫小助手悬浮组件 ============
+from components.panda_chat import render_panda_assistant
+render_panda_assistant()

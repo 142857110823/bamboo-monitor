@@ -163,3 +163,7 @@ with export_cols[1]:
     - **TXT报告**: 可直接用于监测报告附件
     - 所有文件均包含分析时间和模型版本信息，便于追溯
     """)
+
+# ============ 熊猫小助手悬浮组件 ============
+from components.panda_chat import render_panda_assistant
+render_panda_assistant()

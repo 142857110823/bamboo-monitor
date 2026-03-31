@@ -131,3 +131,7 @@ else:
     folium.LayerControl().add_to(m)
 
     st_folium(m, width=None, height=500, returned_objects=[])
+
+# ============ 熊猫小助手悬浮组件 ============
+from components.panda_chat import render_panda_assistant
+render_panda_assistant()

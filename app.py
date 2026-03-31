@@ -335,3 +335,7 @@ with st.expander("了解我们", expanded=False):
     ---
     *大熊猫主食竹智能监测系统 v1.0 | 2024-2025*
     """)
+
+# ============ 熊猫小助手悬浮组件 ============
+from components.panda_chat import render_panda_assistant
+render_panda_assistant()

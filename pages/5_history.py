@@ -180,3 +180,7 @@ with tab_alerts:
         st.dataframe(df_display, width="stretch", hide_index=True)
     else:
         st.info("暂无预警日志。完成影像分析后，系统会自动生成预警信息。")
+
+# ============ 熊猫小助手悬浮组件 ============
+from components.panda_chat import render_panda_assistant
+render_panda_assistant()

@@ -243,3 +243,7 @@ if st.session_state.get("analysis_complete"):
     st.success(f"当前已有分析结果 | 竹林面积: {meta.get('bamboo_area_ha', 0):,.2f} 公顷 | 覆盖度: {meta.get('coverage_pct', 0):.1f}%")
 else:
     st.warning("尚未完成分析，请上传TIF文件或使用模拟数据进行演示")
+
+# ============ 熊猫小助手悬浮组件 ============
+from components.panda_chat import render_panda_assistant
+render_panda_assistant()
