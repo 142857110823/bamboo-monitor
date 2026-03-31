@@ -20,7 +20,14 @@ def _get_avatar_data_uri():
 _PANDA_CHAT_HTML_TEMPLATE = """
 <script>
 (function() {
-    const parentDoc = window.parent.document;
+    var parentDoc;
+    try {
+        parentDoc = window.parent.document;
+        if (!parentDoc || !parentDoc.body) return;
+    } catch(e) {
+        console.warn('Panda Assistant: cannot access parent document', e);
+        return;
+    }
 
     // 避免重复注入
     if (parentDoc.getElementById('panda-assistant')) return;
@@ -382,7 +389,8 @@ _PANDA_CHAT_HTML_TEMPLATE = """
 def render_panda_assistant():
     """在Streamlit页面中注入悬浮熊猫小助手AI聊天组件。
     组件通过 window.parent.document 注入到主页面，不受iframe限制。
+    注意: height 不能为0，否则浏览器不会渲染iframe，脚本无法执行。
     """
     avatar_uri = _get_avatar_data_uri()
     html = _PANDA_CHAT_HTML_TEMPLATE.replace("%%AVATAR_URI%%", avatar_uri)
-    components.html(html, height=0, width=0)
+    components.html(html, height=2, scrolling=False)
