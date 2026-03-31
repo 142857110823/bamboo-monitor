@@ -38,7 +38,7 @@ _PANDA_CHAT_HTML_TEMPLATE = """
     style.textContent = `
         #panda-assistant {
             position: fixed;
-            bottom: 30px;
+            top: 60px;
             right: 30px;
             z-index: 99999;
             user-select: none;
@@ -64,7 +64,7 @@ _PANDA_CHAT_HTML_TEMPLATE = """
         #panda-chat-panel {
             display: none;
             position: absolute;
-            bottom: 85px;
+            top: 85px;
             right: 0;
             width: 340px;
             max-height: 480px;
@@ -182,11 +182,11 @@ _PANDA_CHAT_HTML_TEMPLATE = """
         #panda-chat-panel::after {
             content: '';
             position: absolute;
-            bottom: -8px;
+            top: -8px;
             right: 28px;
             border-left: 8px solid transparent;
             border-right: 8px solid transparent;
-            border-top: 8px solid #fff;
+            border-bottom: 8px solid #2E7D32;
         }
         #panda-status-dot {
             width: 8px;
@@ -198,6 +198,39 @@ _PANDA_CHAT_HTML_TEMPLATE = """
         }
         #panda-status-dot.online { background: #4CAF50; }
         #panda-status-dot.offline { background: #f44336; }
+        #panda-greeting {
+            position: absolute;
+            top: 8px;
+            right: 85px;
+            background: #2E7D32;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            opacity: 0;
+            animation: pandaGreetIn 0.4s ease 0.5s forwards, pandaGreetOut 0.5s ease 6s forwards;
+            pointer-events: none;
+        }
+        #panda-greeting::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -6px;
+            transform: translateY(-50%);
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 6px solid #2E7D32;
+        }
+        @keyframes pandaGreetIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pandaGreetOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
     `;
     parentDoc.head.appendChild(style);
 
@@ -219,6 +252,7 @@ _PANDA_CHAT_HTML_TEMPLATE = """
                 <button id="panda-chat-send">&#x53D1;&#x9001;</button>
             </div>
         </div>
+        <div id="panda-greeting">&#x55F7;&#x545C;&#xFF0C;&#x672C;&#x718A;&#x5DF2;&#x4E0A;&#x7EBF;&#x3002;&#x8BF7;&#x95EE;&#x6709;&#x9700;&#x8981;&#x5E2E;&#x5FD9;&#x7684;&#x5417;</div>
         <img id="panda-avatar-btn" src="%%AVATAR_URI%%" alt="&#x718A;&#x732B;&#x5C0F;&#x52A9;&#x624B;" draggable="false" />
     `;
     parentDoc.body.appendChild(container);
