@@ -8,7 +8,7 @@ import streamlit as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.config import APP_TITLE, PAGE_ICON, USE_MOCK_DATA
+from core.config import APP_TITLE, PAGE_ICON
 from core.export_engine import (
     export_prediction_tif,
     export_prediction_jpg,
@@ -17,7 +17,6 @@ from core.export_engine import (
     generate_report_text,
     generate_intelligent_evaluation,
 )
-from core.mock_generator import generate_mock_prediction, generate_mock_tif_data, generate_mock_dashboard_data
 from core.geo_processor import compute_statistics
 
 # ============ 页面配置 ============
@@ -39,21 +38,12 @@ prediction_map = st.session_state.get("prediction_map")
 analysis_meta = st.session_state.get("analysis_meta", {})
 alerts_list = st.session_state.get("alerts_list", [])
 
-# 演示模式下自动生成数据
-if not has_analysis and USE_MOCK_DATA:
-    st.info("尚未上传真实数据，使用模拟数据进行导出演示。")
-    img_data, meta = generate_mock_tif_data()
-    prediction_map, _ = generate_mock_prediction(img_data)
-    pixel_area_ha = meta.get("pixel_area_ha", 0.01)
-    stats = compute_statistics(prediction_map, pixel_area_ha)
-    analysis_meta = {**meta, **stats}
-    has_analysis = True
-    mock_data = generate_mock_dashboard_data()
-    alerts_list = mock_data["recent_alerts"]
-
-if not has_analysis or prediction_map is None:
-    st.warning("尚未完成影像分析，无法导出数据。请先在「数据上传与分析」页面进行操作。")
+# 检查分析结果
+if not has_analysis:
+    st.warning("尚未完成影像分析，无法导出数据。请先在「数据上传与分析」页面上传影像数据并完成分析。")
     st.stop()
+
+
 
 # 统计概览
 stat_cols = st.columns(3)

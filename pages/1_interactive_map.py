@@ -11,7 +11,7 @@ from streamlit_folium import st_folium
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from core.config import (
-    APP_TITLE, PAGE_ICON, USE_MOCK_DATA,
+    APP_TITLE, PAGE_ICON,
     WANGLANG_CENTER_LAT, WANGLANG_CENTER_LON,
 )
 from core.map_renderer import (
@@ -19,7 +19,6 @@ from core.map_renderer import (
     add_prediction_overlay, add_alert_markers,
     build_analysis_map,
 )
-from core.mock_generator import generate_mock_prediction, generate_mock_tif_data
 
 # ============ 页面配置 ============
 st.set_page_config(page_title=f"交互式地图 - {APP_TITLE}", page_icon=PAGE_ICON, layout="wide")
@@ -55,14 +54,9 @@ prediction_map = st.session_state.get("prediction_map")
 bounds_wgs84 = st.session_state.get("geo_bounds_wgs84")
 analysis_meta = st.session_state.get("analysis_meta", {})
 
-# 如果没有分析结果且为演示模式，使用 mock 数据
-if not has_analysis and USE_MOCK_DATA:
-    st.info("尚未上传真实数据，自动加载模拟数据进行展示。请前往「数据上传与分析」页面上传影像数据。")
-    img_data, meta = generate_mock_tif_data()
-    prediction_map, _ = generate_mock_prediction(img_data)
-    bounds_wgs84 = meta["bounds_wgs84"]
-    analysis_meta = meta
-    has_analysis = True
+# 如果没有分析结果，显示提示信息
+if not has_analysis:
+    st.warning("尚未完成影像分析，地图仅展示保护区基础位置。请前往「数据上传与分析」页面上传影像数据并完成分析。")
 
 # ============ 构建地图 ============
 if has_analysis and prediction_map is not None and bounds_wgs84 is not None:
@@ -101,10 +95,6 @@ if has_analysis and prediction_map is not None and bounds_wgs84 is not None:
     # 添加预警标注
     if show_alerts:
         alerts = st.session_state.get("alerts_list", [])
-        if USE_MOCK_DATA and not alerts:
-            from core.mock_generator import generate_mock_dashboard_data
-            mock_data = generate_mock_dashboard_data()
-            alerts = mock_data["recent_alerts"]
         if alerts:
             m = add_alert_markers(m, alerts)
 

@@ -10,7 +10,7 @@ PAGE_ICON = "🐼"
 
 # ============ 模拟数据开关 ============
 # True: 使用模拟数据（开发期）; False: 使用真实数据
-USE_MOCK_DATA = True
+USE_MOCK_DATA = False
 
 # ============ 模型配置 ============
 MODEL_VERSION = "v1.0-Bamboo"

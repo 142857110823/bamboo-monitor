@@ -9,9 +9,8 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.config import APP_TITLE, PAGE_ICON, USE_MOCK_DATA
+from core.config import APP_TITLE, PAGE_ICON
 from core.database import init_db, get_analysis_history, get_alerts
-from core.mock_generator import generate_mock_dashboard_data
 
 # ============ 页面配置 ============
 st.set_page_config(page_title=f"历史记录 - {APP_TITLE}", page_icon=PAGE_ICON, layout="wide")
@@ -38,11 +37,9 @@ with tab_records:
     # 从数据库获取数据
     records = get_analysis_history(limit=50)
 
-    # 如果数据库为空且处于演示模式，使用 mock 数据
-    if not records and USE_MOCK_DATA:
-        st.caption("数据库中暂无记录，展示模拟历史数据")
-        mock_data = generate_mock_dashboard_data()
-        records = mock_data["history_records"]
+    # 如果数据库为空，显示提示
+    if not records:
+        st.info("数据库中暂无分析记录。完成影像分析后，记录将自动保存到数据库中。")
 
     if records:
         # 汇总统计
@@ -131,10 +128,8 @@ with tab_alerts:
 
     alert_logs = get_alerts(limit=50)
 
-    if not alert_logs and USE_MOCK_DATA:
-        st.caption("数据库中暂无预警记录，展示模拟预警数据")
-        mock_data = generate_mock_dashboard_data()
-        alert_logs = mock_data["recent_alerts"]
+    if not alert_logs:
+        st.info("数据库中暂无预警记录。完成影像分析后，系统会自动生成预警信息。")
 
     if alert_logs:
         severity_icons = {"high": "🔴", "medium": "🟡", "low": "🟢"}

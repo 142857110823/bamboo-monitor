@@ -10,11 +10,10 @@ import streamlit as st
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.config import APP_TITLE, PAGE_ICON, MODEL_VERSION, USE_MOCK_DATA
+from core.config import APP_TITLE, PAGE_ICON, MODEL_VERSION
 from core.geo_processor import read_tif_from_upload, compute_statistics
 from core.model_engine import predict_full_image, get_model_info
 from core.database import init_db, save_analysis_record, save_alerts
-from core.mock_generator import generate_mock_tif_data, generate_mock_prediction
 
 # ============ 页面配置 ============
 st.set_page_config(page_title=f"数据上传与分析 - {APP_TITLE}", page_icon=PAGE_ICON, layout="wide")
@@ -64,59 +63,7 @@ with info_col:
     - **来源**: GEE预处理导出
     """)
 
-# ============ 演示模式快速分析 ============
-if USE_MOCK_DATA:
-    st.markdown("---")
-    st.info("当前为演示模式。你可以上传真实TIF文件，或点击下方按钮使用模拟数据进行演示。")
-    if st.button("使用模拟数据进行演示分析", type="primary"):
-        with st.spinner("正在生成模拟数据并执行分析..."):
-            img_data, meta = generate_mock_tif_data()
-            prediction_map, mock_meta = generate_mock_prediction(img_data)
 
-            pixel_area_ha = meta.get("pixel_area_ha", (meta.get("pixel_size", 10) ** 2) / 10000)
-            stats = compute_statistics(prediction_map, pixel_area_ha)
-
-            # 生成预警
-            from core.alert_engine import generate_alerts
-            alerts = generate_alerts(
-                prediction_map, 
-                meta["bounds_wgs84"], 
-                pixel_area_ha
-            )
-            
-            # 存入 session_state
-            st.session_state["prediction_map"] = prediction_map
-            st.session_state["analysis_meta"] = {**meta, **stats}
-            st.session_state["geo_bounds_wgs84"] = meta["bounds_wgs84"]
-            st.session_state["analysis_complete"] = True
-            st.session_state["alerts_list"] = alerts
-
-            # 保存到数据库
-            record = {
-                "filename": "mock_demo_data.tif",
-                "file_size_mb": 5.0,
-                "image_width": meta["width"],
-                "image_height": meta["height"],
-                "crs_original": meta.get("crs", "EPSG:4326"),
-                "resolution_m": meta.get("resolution_m", 30),
-                "bamboo_pixels": stats["bamboo_pixels"],
-                "total_pixels": stats["total_pixels"],
-                "bamboo_area_ha": stats["bamboo_area_ha"],
-                "coverage_pct": stats["coverage_pct"],
-                "bbox_wgs84": json.dumps(meta.get("bounds_wgs84")),
-                "model_version": MODEL_VERSION,
-                "processing_time_s": 0.5,
-                "status": "success",
-            }
-            record_id = save_analysis_record(record)
-            
-            # 保存预警到数据库
-            if alerts:
-                for alert in alerts:
-                    alert["record_id"] = record_id
-                save_alerts(alerts)
-
-        st.success("模拟分析完成！请前往「交互式地图」页面查看竹林分布结果。")
 
 # ============ 真实文件分析流程 ============
 if uploaded_file is not None:
@@ -242,7 +189,7 @@ if st.session_state.get("analysis_complete"):
     meta = st.session_state.get("analysis_meta", {})
     st.success(f"当前已有分析结果 | 竹林面积: {meta.get('bamboo_area_ha', 0):,.2f} 公顷 | 覆盖度: {meta.get('coverage_pct', 0):.1f}%")
 else:
-    st.warning("尚未完成分析，请上传TIF文件或使用模拟数据进行演示")
+    st.warning("尚未完成分析，请上传TIF文件")
 
 # ============ 熊猫小助手悬浮组件 ============
 from components.panda_chat import render_panda_assistant

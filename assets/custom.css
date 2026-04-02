@@ -9,6 +9,25 @@
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 
+/* 隐藏文件更改提示 (右上角 toast 通知) */
+[data-testid="stToast"],
+[data-testid="stNotification"],
+.stToast,
+.stNotification,
+div[data-testid*="toast"],
+div[data-testid*="notification"],
+/* 针对文件更改提示的特定选择器 */
+.stApp > div > div > div > div > div > div[role="alert"],
+/* 隐藏重新运行按钮 */
+button[kind="rerun"],
+button[data-testid="rerun-button"],
+button[aria-label*="重播"],
+button[aria-label*="重新运行"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* 页面标题样式 */
 h1 {
     color: #1B5E20 !important;

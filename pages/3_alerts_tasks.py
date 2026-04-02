@@ -9,10 +9,9 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from core.config import APP_TITLE, PAGE_ICON, USE_MOCK_DATA
+from core.config import APP_TITLE, PAGE_ICON
 from core.database import init_db, get_alerts, get_tasks, save_task, update_task_status, save_alerts
 from core.alert_engine import generate_alerts
-from core.mock_generator import generate_mock_dashboard_data
 
 # ============ 页面配置 ============
 st.set_page_config(page_title=f"预警与任务 - {APP_TITLE}", page_icon=PAGE_ICON, layout="wide")
@@ -46,9 +45,8 @@ with tab_alerts:
         pixel_area_ha = analysis_meta.get("pixel_area_ha", 0.01)
         alerts = generate_alerts(prediction_map, bounds_wgs84, pixel_area_ha)
         st.session_state["alerts_list"] = alerts
-    elif USE_MOCK_DATA:
-        mock_data = generate_mock_dashboard_data()
-        alerts = mock_data["recent_alerts"]
+    else:
+        alerts = []
 
     # 也从数据库加载历史预警
     db_alerts = get_alerts(limit=20)
