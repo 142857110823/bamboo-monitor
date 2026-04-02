@@ -15,6 +15,7 @@ from core.export_engine import (
     export_statistics_csv,
     export_statistics_excel,
     generate_report_text,
+    generate_intelligent_evaluation,
 )
 from core.mock_generator import generate_mock_prediction, generate_mock_tif_data, generate_mock_dashboard_data
 from core.geo_processor import compute_statistics
@@ -137,10 +138,36 @@ with export_cols[0]:
 
 # 右列：报告导出
 with export_cols[1]:
+    st.markdown("#### 智能评价")
+
+    # 生成智能评价
+    evaluations = generate_intelligent_evaluation(analysis_meta, analysis_meta, alerts_list)
+
+    # 总体评价卡片
+    st.markdown("**总体评价**")
+    st.info(evaluations["overall_assessment"])
+
+    # 资源质量评价
+    with st.expander("📊 资源质量评价", expanded=True):
+        st.write(evaluations["resource_quality"])
+
+    # 生态健康评价
+    with st.expander("🌿 生态健康评价", expanded=True):
+        st.write(evaluations["ecological_health"])
+
+    # 风险提示
+    with st.expander("⚠️ 风险提示", expanded=True):
+        st.write(evaluations["risk_warnings"])
+
+    # 未来展望
+    with st.expander("🔮 未来展望", expanded=False):
+        st.write(evaluations["future_outlook"])
+
+    st.markdown("---")
     st.markdown("#### 分析报告")
 
     st.markdown("**监测分析报告 (TXT)**")
-    st.caption("包含影像信息、分析结果、决策建议和预警信息的完整报告")
+    st.caption("包含影像信息、分析结果、智能评价和预警信息的完整报告")
 
     report_text = generate_report_text(analysis_meta, analysis_meta, alerts_list)
 
@@ -160,7 +187,7 @@ with export_cols[1]:
     st.markdown("""
     - **GeoTIFF**: 可直接导入 QGIS 进行专题地图制作（添加图例、指北针、比例尺等）
     - **CSV/Excel**: 可用于数据统计分析和报告撰写
-    - **TXT报告**: 可直接用于监测报告附件
+    - **TXT报告**: 包含智能评价，可直接用于监测报告附件
     - 所有文件均包含分析时间和模型版本信息，便于追溯
     """)
 
