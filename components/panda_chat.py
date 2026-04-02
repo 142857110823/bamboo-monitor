@@ -214,178 +214,224 @@ _COMPONENT_HTML = """
 
 <script>
 (function() {
-    if (window._pandaAssistantInit) return;
-    window._pandaAssistantInit = true;
-
-    var assistant = document.getElementById('panda-assistant');
-    var avatarBtn = document.getElementById('panda-avatar-btn');
-    var panel     = document.getElementById('panda-chat-panel');
-    var closeBtn  = document.getElementById('panda-close-btn');
-    var msgBox    = document.getElementById('panda-chat-messages');
-    var chatInput = document.getElementById('panda-chat-input');
-    var sendBtn   = document.getElementById('panda-chat-send');
-    var statusDot = document.getElementById('panda-status-dot');
-    var greeting  = document.getElementById('panda-greeting');
-    if (!assistant || !avatarBtn) return;
-
-    var LLM_URL = 'http://127.0.0.1:8000/v1/chat/completions';
-    var isHTTPS = (location.protocol === 'https:');
-    var llmOK = false;
-    var chatHist = [];
-
-    var KB = [
-        {k:['你好','嗨','hello','hi','在吗'], a:'你好呀！我是熊猫小助手，有关大熊猫主食竹监测的问题都可以问我哦~'},
-        {k:['你是谁','介绍','自我介绍','什么'], a:'我是熊猫小助手，运行在大熊猫主食竹智能监测与决策支持系统中。我可以回答关于竹林监测、大熊猫保护、遥感分析等方面的问题。'},
-        {k:['竹林','竹子','主食竹','bamboo'], a:'大熊猫的主食竹主要包括箭竹、缺苞箭竹和华西箭竹等。本系统通过遥感影像分析竹林的时空分布变化，利用双时相NDVI特征区分竹林的常绿特性。'},
-        {k:['大熊猫','熊猫','panda','保护'], a:'大熊猫是我国特有的珍稀濒危物种，被誉为"国宝"。竹子占大熊猫食物来源的99%以上，因此监测竹林资源对大熊猫栖息地保护至关重要。'},
-        {k:['王朗','保护区','wanglang'], a:'王朗自然保护区位于四川省绵阳市平武县，是我国最早建立的大熊猫自然保护区之一，面积约322平方公里。'},
-        {k:['ndvi','遥感','sentinel','卫星','影像'], a:'本系统采用Sentinel-2卫星多时相遥感影像，提取夏季和冬季NDVI作为特征。竹林在冬季仍保持较高NDVI值。'},
-        {k:['模型','随机森林','分类','预测','算法'], a:'本系统采用随机森林分类器，包含100棵决策树，输入双时相NDVI特征，输出竹林/非竹林二分类结果。'},
-        {k:['预警','退化','碎片化','风险','alert'], a:'系统会自动检测三类风险：1) 竹林退化预警；2) 低覆盖度预警；3) 碎片化预警。'},
-        {k:['导出','下载','报告','export','tif','csv'], a:'数据导出页面支持多种格式：GeoTIFF、JPG图片、CSV/Excel统计报表、TXT分析报告。'},
-        {k:['上传','分析','使用','怎么用','操作'], a:'使用步骤：1) 上传GeoTIFF影像；2) 系统自动执行竹林分类；3) 查看交互式地图；4) 查看预警；5) 导出结果。'},
-        {k:['gee','google earth engine','地球引擎'], a:'Google Earth Engine是本系统数据预处理的核心平台。'},
-        {k:['地图','folium','可视化','空间'], a:'交互式地图基于Folium构建，支持竹林分类结果叠加、保护区标记、预警标注和热力图。'},
-        {k:['温度','气温','环境','气候','天气'], a:'大熊猫适宜的环境温度为5-25°C，竹林最佳生长温度为15-22°C，湿度60-80%。'},
-        {k:['谢谢','感谢','thanks','thank'], a:'不客气！有任何关于竹林监测的问题随时问我。保护大熊猫，从保护竹林开始！'}
-    ];
-
-    function kbSearch(q) {
-        var ql = q.toLowerCase();
-        for (var i = 0; i < KB.length; i++)
-            for (var j = 0; j < KB[i].k.length; j++)
-                if (ql.indexOf(KB[i].k[j]) !== -1) return KB[i].a;
-        return '抱歉，这个问题超出了我的知识范围。\\n\\n你可以试试问我：竹林监测、大熊猫保护、NDVI遥感、模型算法、预警机制等话题。';
+    // 使用页面路径作为唯一标识，确保每个页面都能独立初始化
+    var pageId = location.pathname.replace(/[^a-zA-Z0-9]/g, '_');
+    var initFlag = '_pandaAssistantInit_' + pageId;
+    
+    // 检查当前页面是否已初始化
+    if (window[initFlag]) {
+        console.log('熊猫小助手：当前页面已初始化，跳过 - 页面ID: ' + pageId);
+        return;
     }
-
-    function checkLLM() {
-        if (isHTTPS) { statusDot.className = 'online'; statusDot.title = '知识库模式'; return; }
-        fetch(LLM_URL, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({model:'qwen', messages:[{role:'user',content:'ping'}], max_tokens:1})
-        }).then(function(r) { llmOK = r.ok; statusDot.className = r.ok ? 'online' : 'offline'; })
-          .catch(function() { llmOK = false; statusDot.className = 'offline'; });
-    }
-    checkLLM();
-
-    var dragStartX, dragStartY, elemStartX, elemStartY, hasMoved;
-
-    avatarBtn.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        dragStartX = e.clientX; dragStartY = e.clientY;
-        var rect = assistant.getBoundingClientRect();
-        elemStartX = rect.left; elemStartY = rect.top;
-        hasMoved = false;
-        function onMove(ev) {
-            var dx = ev.clientX - dragStartX, dy = ev.clientY - dragStartY;
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                hasMoved = true;
-                var maxX = document.documentElement.clientWidth - assistant.offsetWidth;
-                var maxY = document.documentElement.clientHeight - assistant.offsetHeight;
-                assistant.style.left = Math.max(0, Math.min(elemStartX + dx, maxX)) + 'px';
-                assistant.style.top  = Math.max(0, Math.min(elemStartY + dy, maxY)) + 'px';
-                assistant.style.right = 'auto';
-            }
+    
+    // DOM加载检测和初始化函数
+    function initPandaAssistant() {
+        var assistant = document.getElementById('panda-assistant');
+        var avatarBtn = document.getElementById('panda-avatar-btn');
+        
+        // 确保DOM元素存在
+        if (!assistant || !avatarBtn) {
+            console.log('熊猫小助手：DOM元素未找到，延迟重试 - 页面ID: ' + pageId);
+            return false;
         }
-        function onUp() {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-            avatarBtn.style.cursor = 'grab';
-            if (!hasMoved) {
-                panel.classList.toggle('open');
-                if (panel.classList.contains('open')) {
-                    greeting.style.display = 'none';
-                    chatInput.focus();
-                    checkLLM();
+        
+        // 标记为已初始化
+        window[initFlag] = true;
+        console.log('熊猫小助手：初始化开始 - 页面ID: ' + pageId);
+        
+        // 获取其他DOM元素
+        var panel     = document.getElementById('panda-chat-panel');
+        var closeBtn  = document.getElementById('panda-close-btn');
+        var msgBox    = document.getElementById('panda-chat-messages');
+        var chatInput = document.getElementById('panda-chat-input');
+        var sendBtn   = document.getElementById('panda-chat-send');
+        var statusDot = document.getElementById('panda-status-dot');
+        var greeting  = document.getElementById('panda-greeting');
+
+        var LLM_URL = 'http://127.0.0.1:8000/v1/chat/completions';
+        var isHTTPS = (location.protocol === 'https:');
+        var llmOK = false;
+        var chatHist = [];
+
+        var KB = [
+            {k:['你好','嗨','hello','hi','在吗'], a:'你好呀！我是熊猫小助手，有关大熊猫主食竹监测的问题都可以问我哦~'},
+            {k:['你是谁','介绍','自我介绍','什么'], a:'我是熊猫小助手，运行在大熊猫主食竹智能监测与决策支持系统中。我可以回答关于竹林监测、大熊猫保护、遥感分析等方面的问题。'},
+            {k:['竹林','竹子','主食竹','bamboo'], a:'大熊猫的主食竹主要包括箭竹、缺苞箭竹和华西箭竹等。本系统通过遥感影像分析竹林的时空分布变化，利用双时相NDVI特征区分竹林的常绿特性。'},
+            {k:['大熊猫','熊猫','panda','保护'], a:'大熊猫是我国特有的珍稀濒危物种，被誉为"国宝"。竹子占大熊猫食物来源的99%以上，因此监测竹林资源对大熊猫栖息地保护至关重要。'},
+            {k:['王朗','保护区','wanglang'], a:'王朗自然保护区位于四川省绵阳市平武县，是我国最早建立的大熊猫自然保护区之一，面积约322平方公里。'},
+            {k:['ndvi','遥感','sentinel','卫星','影像'], a:'本系统采用Sentinel-2卫星多时相遥感影像，提取夏季和冬季NDVI作为特征。竹林在冬季仍保持较高NDVI值。'},
+            {k:['模型','随机森林','分类','预测','算法'], a:'本系统采用随机森林分类器，包含100棵决策树，输入双时相NDVI特征，输出竹林/非竹林二分类结果。'},
+            {k:['预警','退化','碎片化','风险','alert'], a:'系统会自动检测三类风险：1) 竹林退化预警；2) 低覆盖度预警；3) 碎片化预警。'},
+            {k:['导出','下载','报告','export','tif','csv'], a:'数据导出页面支持多种格式：GeoTIFF、JPG图片、CSV/Excel统计报表、TXT分析报告。'},
+            {k:['上传','分析','使用','怎么用','操作'], a:'使用步骤：1) 上传GeoTIFF影像；2) 系统自动执行竹林分类；3) 查看交互式地图；4) 查看预警；5) 导出结果。'},
+            {k:['gee','google earth engine','地球引擎'], a:'Google Earth Engine是本系统数据预处理的核心平台。'},
+            {k:['地图','folium','可视化','空间'], a:'交互式地图基于Folium构建，支持竹林分类结果叠加、保护区标记、预警标注和热力图。'},
+            {k:['温度','气温','环境','气候','天气'], a:'大熊猫适宜的环境温度为5-25°C，竹林最佳生长温度为15-22°C，湿度60-80%。'},
+            {k:['谢谢','感谢','thanks','thank'], a:'不客气！有任何关于竹林监测的问题随时问我。保护大熊猫，从保护竹林开始！'}
+        ];
+
+        function kbSearch(q) {
+            var ql = q.toLowerCase();
+            for (var i = 0; i < KB.length; i++)
+                for (var j = 0; j < KB[i].k.length; j++)
+                    if (ql.indexOf(KB[i].k[j]) !== -1) return KB[i].a;
+            return '抱歉，这个问题超出了我的知识范围。\\n\\n你可以试试问我：竹林监测、大熊猫保护、NDVI遥感、模型算法、预警机制等话题。';
+        }
+
+        function checkLLM() {
+            if (isHTTPS) { statusDot.className = 'online'; statusDot.title = '知识库模式'; return; }
+            fetch(LLM_URL, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model:'qwen', messages:[{role:'user',content:'ping'}], max_tokens:1})
+            }).then(function(r) { llmOK = r.ok; statusDot.className = r.ok ? 'online' : 'offline'; })
+              .catch(function() { llmOK = false; statusDot.className = 'offline'; });
+        }
+        checkLLM();
+
+        var dragStartX, dragStartY, elemStartX, elemStartY, hasMoved;
+
+        avatarBtn.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            dragStartX = e.clientX; dragStartY = e.clientY;
+            var rect = assistant.getBoundingClientRect();
+            elemStartX = rect.left; elemStartY = rect.top;
+            hasMoved = false;
+            function onMove(ev) {
+                var dx = ev.clientX - dragStartX, dy = ev.clientY - dragStartY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    hasMoved = true;
+                    var maxX = document.documentElement.clientWidth - assistant.offsetWidth;
+                    var maxY = document.documentElement.clientHeight - assistant.offsetHeight;
+                    assistant.style.left = Math.max(0, Math.min(elemStartX + dx, maxX)) + 'px';
+                    assistant.style.top  = Math.max(0, Math.min(elemStartY + dy, maxY)) + 'px';
+                    assistant.style.right = 'auto';
                 }
             }
-        }
-        avatarBtn.style.cursor = 'grabbing';
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-    });
-
-    avatarBtn.addEventListener('touchstart', function(e) {
-        var t = e.touches[0];
-        dragStartX = t.clientX; dragStartY = t.clientY;
-        var rect = assistant.getBoundingClientRect();
-        elemStartX = rect.left; elemStartY = rect.top;
-        hasMoved = false;
-        function onTouchMove(ev) {
-            var t2 = ev.touches[0];
-            var dx = t2.clientX - dragStartX, dy = t2.clientY - dragStartY;
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                hasMoved = true;
-                assistant.style.left = (elemStartX + dx) + 'px';
-                assistant.style.top  = (elemStartY + dy) + 'px';
-                assistant.style.right = 'auto';
-            }
-        }
-        function onTouchEnd() {
-            document.removeEventListener('touchmove', onTouchMove);
-            document.removeEventListener('touchend', onTouchEnd);
-            if (!hasMoved) {
-                panel.classList.toggle('open');
-                if (panel.classList.contains('open')) {
-                    greeting.style.display = 'none';
-                    chatInput.focus();
-                    checkLLM();
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                avatarBtn.style.cursor = 'grab';
+                if (!hasMoved) {
+                    panel.classList.toggle('open');
+                    if (panel.classList.contains('open')) {
+                        greeting.style.display = 'none';
+                        chatInput.focus();
+                        checkLLM();
+                    }
                 }
             }
+            avatarBtn.style.cursor = 'grabbing';
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+
+        avatarBtn.addEventListener('touchstart', function(e) {
+            var t = e.touches[0];
+            dragStartX = t.clientX; dragStartY = t.clientY;
+            var rect = assistant.getBoundingClientRect();
+            elemStartX = rect.left; elemStartY = rect.top;
+            hasMoved = false;
+            function onTouchMove(ev) {
+                var t2 = ev.touches[0];
+                var dx = t2.clientX - dragStartX, dy = t2.clientY - dragStartY;
+                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                    hasMoved = true;
+                    assistant.style.left = (elemStartX + dx) + 'px';
+                    assistant.style.top  = (elemStartY + dy) + 'px';
+                    assistant.style.right = 'auto';
+                }
+            }
+            function onTouchEnd() {
+                document.removeEventListener('touchmove', onTouchMove);
+                document.removeEventListener('touchend', onTouchEnd);
+                if (!hasMoved) {
+                    panel.classList.toggle('open');
+                    if (panel.classList.contains('open')) {
+                        greeting.style.display = 'none';
+                        chatInput.focus();
+                        checkLLM();
+                    }
+                }
+            }
+            document.addEventListener('touchmove', onTouchMove, {passive: true});
+            document.addEventListener('touchend', onTouchEnd);
+        }, {passive: true});
+
+        closeBtn.addEventListener('click', function() { panel.classList.remove('open'); });
+
+        function addMsg(text, cls) {
+            var d = document.createElement('div');
+            d.className = 'panda-msg ' + cls;
+            d.textContent = text;
+            msgBox.appendChild(d);
+            msgBox.scrollTop = msgBox.scrollHeight;
+            return d;
         }
-        document.addEventListener('touchmove', onTouchMove, {passive: true});
-        document.addEventListener('touchend', onTouchEnd);
-    }, {passive: true});
 
-    closeBtn.addEventListener('click', function() { panel.classList.remove('open'); });
-
-    function addMsg(text, cls) {
-        var d = document.createElement('div');
-        d.className = 'panda-msg ' + cls;
-        d.textContent = text;
-        msgBox.appendChild(d);
-        msgBox.scrollTop = msgBox.scrollHeight;
-        return d;
-    }
-
-    function handleSend() {
-        var q = chatInput.value.trim();
-        if (!q) return;
-        chatInput.value = '';
-        addMsg(q, 'user');
-        sendBtn.disabled = true;
-        var thinking = addMsg('正在思考...', 'bot');
-        if (isHTTPS || !llmOK) {
-            setTimeout(function() { thinking.textContent = kbSearch(q); sendBtn.disabled = false; }, 300);
-            return;
+        function handleSend() {
+            var q = chatInput.value.trim();
+            if (!q) return;
+            chatInput.value = '';
+            addMsg(q, 'user');
+            sendBtn.disabled = true;
+            var thinking = addMsg('正在思考...', 'bot');
+            if (isHTTPS || !llmOK) {
+                setTimeout(function() { thinking.textContent = kbSearch(q); sendBtn.disabled = false; }, 300);
+                return;
+            }
+            chatHist.push({role:'user', content:q});
+            var msgs = [{role:'system', content:'你是"熊猫小助手"，专注于大熊猫主食竹监测与保护的AI助手。请用简洁友好的中文回答，控制在200字以内。'}]
+                .concat(chatHist.slice(-10));
+            fetch(LLM_URL, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model:'qwen', messages:msgs, temperature:0.7, max_tokens:512, stream:false})
+            }).then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+              .then(function(d) {
+                var reply = (d.choices && d.choices[0] && d.choices[0].message) ? d.choices[0].message.content : '抱歉，暂时无法回答。';
+                thinking.textContent = reply;
+                chatHist.push({role:'assistant', content:reply});
+                statusDot.className = 'online';
+            }).catch(function() {
+                thinking.textContent = kbSearch(q); llmOK = false; statusDot.className = 'offline'; chatHist.pop();
+            }).finally(function() { sendBtn.disabled = false; msgBox.scrollTop = msgBox.scrollHeight; });
         }
-        chatHist.push({role:'user', content:q});
-        var msgs = [{role:'system', content:'你是"熊猫小助手"，专注于大熊猫主食竹监测与保护的AI助手。请用简洁友好的中文回答，控制在200字以内。'}]
-            .concat(chatHist.slice(-10));
-        fetch(LLM_URL, {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({model:'qwen', messages:msgs, temperature:0.7, max_tokens:512, stream:false})
-        }).then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
-          .then(function(d) {
-            var reply = (d.choices && d.choices[0] && d.choices[0].message) ? d.choices[0].message.content : '抱歉，暂时无法回答。';
-            thinking.textContent = reply;
-            chatHist.push({role:'assistant', content:reply});
-            statusDot.className = 'online';
-        }).catch(function() {
-            thinking.textContent = kbSearch(q); llmOK = false; statusDot.className = 'offline'; chatHist.pop();
-        }).finally(function() { sendBtn.disabled = false; msgBox.scrollTop = msgBox.scrollHeight; });
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+        });
+
+        setTimeout(function() {
+            greeting.style.transition = 'opacity 0.5s';
+            greeting.style.opacity = '0';
+            setTimeout(function() { greeting.style.display = 'none'; }, 500);
+        }, 7000);
+        
+        // 页面卸载时清理状态，确保下次访问能正确初始化
+        window.addEventListener('beforeunload', function() {
+            window[initFlag] = false;
+            console.log('熊猫小助手：页面卸载，清理状态 - 页面ID: ' + pageId);
+        });
+        
+        console.log('熊猫小助手：初始化完成 - 页面ID: ' + pageId);
+        return true;
     }
-
-    sendBtn.addEventListener('click', handleSend);
-    chatInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-    });
-
-    setTimeout(function() {
-        greeting.style.transition = 'opacity 0.5s';
-        greeting.style.opacity = '0';
-        setTimeout(function() { greeting.style.display = 'none'; }, 500);
-    }, 7000);
+    
+    // 立即尝试初始化
+    if (!initPandaAssistant()) {
+        // 如果失败，延迟重试（最多重试5次）
+        var retryCount = 0;
+        var maxRetries = 5;
+        var retryInterval = setInterval(function() {
+            retryCount++;
+            if (initPandaAssistant() || retryCount >= maxRetries) {
+                clearInterval(retryInterval);
+                if (retryCount >= maxRetries) {
+                    console.log('熊猫小助手：达到最大重试次数，初始化失败 - 页面ID: ' + pageId);
+                }
+            }
+        }, 500); // 每500ms重试一次
+    }
 })();
 </script>
 """
