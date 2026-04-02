@@ -216,9 +216,106 @@ def export_statistics_excel(stats, meta, alerts=None):
     return buffer.getvalue()
 
 
+def generate_intelligent_evaluation(stats, meta, alerts=None):
+    """
+    生成智能评价性语句
+
+    Returns:
+        dict: 包含各类评价语句的字典
+    """
+    bamboo_area = stats.get("bamboo_area_ha", 0)
+    coverage = stats.get("coverage_pct", 0)
+    bamboo_pixels = stats.get("bamboo_pixels", 0)
+    total_pixels = stats.get("total_pixels", 0)
+
+    # 预警统计
+    alert_count = len(alerts) if alerts else 0
+    high_risk_count = sum(1 for a in alerts if a.get("severity") == "high") if alerts else 0
+    medium_risk_count = sum(1 for a in alerts if a.get("severity") == "medium") if alerts else 0
+
+    evaluations = {
+        "overall_assessment": "",
+        "resource_quality": "",
+        "ecological_health": "",
+        "management_suggestions": "",
+        "risk_warnings": "",
+        "future_outlook": ""
+    }
+
+    # 1. 总体评价
+    if coverage >= 50:
+        evaluations["overall_assessment"] = "🟢 优秀：该区域竹林覆盖度较高，竹林资源充足，为大熊猫提供了良好的栖息环境和食物来源。"
+    elif coverage >= 30:
+        evaluations["overall_assessment"] = "🟡 良好：该区域竹林覆盖度适中，基本满足大熊猫的觅食需求，建议持续监测。"
+    elif coverage >= 15:
+        evaluations["overall_assessment"] = "🟠 一般：该区域竹林覆盖度偏低，可能无法完全满足大熊猫的觅食需求，需关注竹林恢复情况。"
+    else:
+        evaluations["overall_assessment"] = "🔴 较差：该区域竹林覆盖度严重不足，大熊猫栖息环境堪忧，建议立即采取保护措施。"
+
+    # 2. 资源质量评价
+    if bamboo_area >= 5000:
+        evaluations["resource_quality"] = "该区域竹林资源丰富，竹林面积超过5000公顷，为大熊猫提供了充足的食物来源和栖息空间。"
+    elif bamboo_area >= 2000:
+        evaluations["resource_quality"] = "该区域竹林资源较为丰富，竹林面积在2000-5000公顷之间，能够支持一定数量的大熊猫种群。"
+    elif bamboo_area >= 500:
+        evaluations["resource_quality"] = "该区域竹林资源一般，竹林面积在500-2000公顷之间，建议加强竹林保护和恢复工作。"
+    else:
+        evaluations["resource_quality"] = "该区域竹林资源匮乏，竹林面积不足500公顷，难以支撑大熊猫的长期生存需求。"
+
+    # 3. 生态健康评价
+    if alert_count == 0:
+        evaluations["ecological_health"] = "✅ 生态健康状况良好，未发现明显的竹林退化或异常区域，生态系统稳定。"
+    elif high_risk_count == 0:
+        evaluations["ecological_health"] = f"⚠️ 生态健康状况一般，发现{alert_count}处中等风险区域，建议关注这些区域的动态变化。"
+    else:
+        evaluations["ecological_health"] = f"🚨 生态健康状况堪忧，发现{high_risk_count}处高风险区域和{medium_risk_count}处中等风险区域，需要立即采取保护措施。"
+
+    # 4. 管理建议
+    if coverage >= 40 and alert_count == 0:
+        evaluations["management_suggestions"] = """建议采取以下管理措施：
+  1. 维持现状：当前竹林资源状况良好，继续保持现有的保护措施。
+  2. 定期监测：建议每季度进行一次遥感监测，及时发现潜在问题。
+  3. 巡护优化：重点巡护竹林密集区域，确保大熊猫活动安全。"""
+    elif coverage >= 20:
+        evaluations["management_suggestions"] = """建议采取以下管理措施：
+  1. 加强保护：增加巡护频次，防止人为破坏竹林资源。
+  2. 恢复工程：在竹林稀疏区域开展人工补植，提高竹林覆盖率。
+  3. 动态监测：建议每月进行一次遥感监测，密切关注竹林变化。"""
+    else:
+        evaluations["management_suggestions"] = """建议采取以下紧急措施：
+  1. 立即干预：启动紧急保护预案，限制人类活动对竹林的影响。
+  2. 大规模恢复：开展大规模竹林补植工程，优先恢复关键区域。
+  3. 密集监测：建议每周进行一次遥感监测，实时掌握竹林动态。
+  4. 科研支持：邀请林业专家进行现场调研，制定科学的恢复方案。"""
+
+    # 5. 风险提示
+    risk_factors = []
+    if coverage < 20:
+        risk_factors.append("竹林覆盖度严重不足，可能导致大熊猫食物短缺")
+    if high_risk_count > 0:
+        risk_factors.append(f"存在{high_risk_count}处高风险区域，可能威胁大熊猫安全")
+    if bamboo_area < 1000:
+        risk_factors.append("竹林面积过小，难以支撑大熊猫种群的长期生存")
+
+    if risk_factors:
+        evaluations["risk_warnings"] = "⚠️ 主要风险：\n  " + "\n  ".join([f"{i+1}. {risk}" for i, risk in enumerate(risk_factors)])
+    else:
+        evaluations["risk_warnings"] = "✅ 当前未发现明显风险因素，但仍需保持警惕，持续监测。"
+
+    # 6. 未来展望
+    if coverage >= 40 and alert_count == 0:
+        evaluations["future_outlook"] = "基于当前良好的竹林资源状况，预计该区域能够持续为大熊猫提供优质的栖息环境。建议继续加强保护，确保生态系统的长期稳定。"
+    elif coverage >= 20:
+        evaluations["future_outlook"] = "通过加强保护和恢复措施，预计该区域竹林资源将逐步改善。建议制定3-5年的恢复计划，逐步提高竹林覆盖度。"
+    else:
+        evaluations["future_outlook"] = "当前竹林资源状况令人担忧，需要立即采取强有力的保护措施。如果不及时干预，该区域可能不再适合大熊猫栖息。建议启动紧急保护预案，争取在2-3年内显著改善竹林状况。"
+
+    return evaluations
+
+
 def generate_report_text(stats, meta, alerts=None):
     """
-    生成简易文本报告
+    生成智能评价文本报告
 
     Returns:
         str: 报告内容
@@ -235,8 +332,8 @@ def generate_report_text(stats, meta, alerts=None):
     bamboo_pixels = stats.get("bamboo_pixels", 0)
     total_pixels = stats.get("total_pixels", 0)
 
-    distribution = "集中" if coverage > 40 else "较为分散"
-    suitability = "适合" if coverage > 30 else "需关注是否满足"
+    # 生成智能评价
+    evaluations = generate_intelligent_evaluation(stats, meta, alerts)
 
     report = f"""
 =====================================
@@ -258,11 +355,25 @@ def generate_report_text(stats, meta, alerts=None):
   - 竹林像素数: {bamboo_pixels:,}
   - 有效像素总数: {total_pixels:,}
 
-三、决策建议
-  1. 资源评估: 该区域竹林分布{distribution}，
-     {suitability}大熊猫觅食需求。
-  2. 巡护建议: 建议重点关注海拔2200-2500米区域。
-  3. 风险提示: 冬季高海拔区域可能有积雪，请注意防滑。
+三、智能评价
+
+【总体评价】
+{evaluations['overall_assessment']}
+
+【资源质量评价】
+{evaluations['resource_quality']}
+
+【生态健康评价】
+{evaluations['ecological_health']}
+
+【管理建议】
+{evaluations['management_suggestions']}
+
+【风险提示】
+{evaluations['risk_warnings']}
+
+【未来展望】
+{evaluations['future_outlook']}
 """
 
     if alerts:

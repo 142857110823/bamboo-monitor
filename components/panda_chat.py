@@ -272,9 +272,44 @@ _PANDA_CHAT_HTML_TEMPLATE = """
     const MODEL_NAME = "Qwen-1_8B-Chat";
     const SYSTEM_PROMPT = "你是'熊猫小助手'，一个专注于大熊猫主食竹监测与保护的AI助手。你运行在大熊猫主食竹智能监测与决策支持系统中。请用简洁友好的中文回答用户关于竹林监测、大熊猫保护、遥感分析、GIS地理信息等方面的问题。回答控制在200字以内。";
     const history = [];
+    const isHTTPS = window.parent.location.protocol === 'https:';
+
+    // ===== 离线知识库（云端HTTPS模式使用） =====
+    const KB = [
+        { keys: ['你好','嗨','hello','hi','在吗'], answer: '你好呀！我是熊猫小助手，有关大熊猫主食竹监测的问题都可以问我哦~' },
+        { keys: ['你是谁','介绍','自我介绍','什么'], answer: '我是熊猫小助手，运行在大熊猫主食竹智能监测与决策支持系统中。我可以回答关于竹林监测、大熊猫保护、遥感分析等方面的问题。' },
+        { keys: ['竹林','竹子','主食竹','bamboo'], answer: '大熊猫的主食竹主要包括箭竹、缺苞箭竹和华西箭竹等。本系统通过遥感影像分析竹林的时空分布变化，目前监测区域为王朗自然保护区，利用双时相NDVI特征区分竹林的常绿特性。' },
+        { keys: ['大熊猫','熊猫','panda','保护'], answer: '大熊猫是我国特有的珍稀濒危物种，被誉为"国宝"。竹子占大熊猫食物来源的99%以上，因此监测竹林资源对大熊猫栖息地保护至关重要。本系统可自动识别竹林退化、碎片化等风险。' },
+        { keys: ['王朗','保护区','wanglang'], answer: '王朗自然保护区位于四川省绵阳市平武县，是我国最早建立的大熊猫自然保护区之一，面积约322平方公里。保护区内有丰富的竹林资源，是大熊猫重要的栖息地。' },
+        { keys: ['ndvi','遥感','sentinel','卫星','影像'], answer: '本系统采用Sentinel-2卫星多时相遥感影像，提取夏季和冬季NDVI（归一化植被指数）作为特征。竹林在冬季仍保持较高NDVI值（常绿特性），而落叶林NDVI显著下降，利用这一差异可有效区分竹林。' },
+        { keys: ['模型','随机森林','分类','预测','算法'], answer: '本系统采用随机森林（Random Forest）分类器，包含100棵决策树，输入双时相NDVI特征（夏季+冬季），输出竹林/非竹林二分类结果。模型在验证集上表现良好，适用于大面积竹林资源快速监测。' },
+        { keys: ['预警','退化','碎片化','风险','alert'], answer: '系统会自动检测三类风险：1) 竹林退化预警 - 发现NDVI异常下降区域；2) 低覆盖度预警 - 竹林稀疏区域；3) 碎片化预警 - 竹林斑块破碎化严重区域。每条预警包含位置、影响面积和巡护建议。' },
+        { keys: ['导出','下载','报告','export','tif','csv'], answer: '数据导出页面支持多种格式：GeoTIFF（含地理坐标的分类栅格）、JPG图片（适合报告插图）、CSV/Excel统计报表、TXT分析报告。所有文件均包含分析时间和模型版本信息。' },
+        { keys: ['上传','分析','使用','怎么用','操作'], answer: '使用步骤：1) 在"数据上传与分析"页面上传GeoTIFF格式的双时相NDVI影像；2) 系统自动执行竹林分类推理；3) 在"交互式地图"查看空间分布；4) 在"预警与任务"查看风险区域；5) 在"数据导出"下载结果。' },
+        { keys: ['gee','google earth engine','地球引擎'], answer: 'Google Earth Engine（GEE）是本系统数据预处理的核心平台，用于获取和处理Sentinel-2多时相遥感影像，生成双时相NDVI合成特征。GEE的云端计算能力使得大面积遥感数据处理更加高效。' },
+        { keys: ['地图','folium','可视化','空间'], answer: '交互式地图基于Folium构建，支持：竹林分类结果叠加显示、保护区标记、预警位置标注、热力图展示竹林密度分布。支持图层控制、透明度调节和多种底图切换。' },
+        { keys: ['谢谢','感谢','thanks','thank'], answer: '不客气！有任何关于竹林监测的问题随时问我。保护大熊猫，从保护竹林开始！' },
+    ];
+    function kbSearch(q) {
+        var ql = q.toLowerCase();
+        for (var i = 0; i < KB.length; i++) {
+            for (var j = 0; j < KB[i].keys.length; j++) {
+                if (ql.indexOf(KB[i].keys[j]) !== -1) return KB[i].answer;
+            }
+        }
+        return '抱歉，这个问题超出了我的知识范围。本地部署模式下可连接通义千问获得更丰富的回答哦~\n\n你可以试试问我：竹林监测、大熊猫保护、NDVI遥感、模型算法、预警机制、数据导出等话题。';
+    }
 
     // ===== 检测模型服务状态 =====
+    var llmAvailable = false;
     async function checkStatus() {
+        if (isHTTPS) {
+            statusDot.className = 'online';
+            statusDot.id = 'panda-status-dot';
+            statusDot.title = '知识库模式';
+            llmAvailable = false;
+            return;
+        }
         try {
             const resp = await fetch(LLM_API_URL, {
                 method: 'POST',
@@ -286,9 +321,11 @@ _PANDA_CHAT_HTML_TEMPLATE = """
                 }),
                 signal: AbortSignal.timeout(3000)
             });
+            llmAvailable = resp.ok;
             statusDot.className = resp.ok ? 'online' : 'offline';
             statusDot.id = 'panda-status-dot';
         } catch(e) {
+            llmAvailable = false;
             statusDot.className = 'offline';
             statusDot.id = 'panda-status-dot';
         }
@@ -360,9 +397,19 @@ _PANDA_CHAT_HTML_TEMPLATE = """
         addMsg(q, 'user');
         sendBtn.disabled = true;
 
-        history.push({ role: 'user', content: q });
-
         const thinking = addMsg('正在思考...', 'bot');
+
+        // 云端HTTPS模式 或 本地模型不可用 → 使用知识库
+        if (isHTTPS || !llmAvailable) {
+            var reply = kbSearch(q);
+            thinking.textContent = reply;
+            sendBtn.disabled = false;
+            msgBox.scrollTop = msgBox.scrollHeight;
+            return;
+        }
+
+        // 本地HTTP模式 → 调用通义千问模型
+        history.push({ role: 'user', content: q });
 
         try {
             const messages = [
@@ -395,11 +442,12 @@ _PANDA_CHAT_HTML_TEMPLATE = """
             statusDot.className = 'online';
             statusDot.id = 'panda-status-dot';
         } catch (err) {
-            thinking.textContent = 'AI助手暂时离线，请确保本地模型服务已启动 (localhost:8000)';
-            thinking.className = 'panda-msg error';
+            // 模型调用失败，回退到知识库
+            thinking.textContent = kbSearch(q);
+            thinking.className = 'panda-msg bot';
+            llmAvailable = false;
             statusDot.className = 'offline';
             statusDot.id = 'panda-status-dot';
-            // 移除失败的用户消息记录，避免污染对话历史
             history.pop();
         }
 
