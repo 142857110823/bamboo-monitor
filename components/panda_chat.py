@@ -1,5 +1,5 @@
 """
-熊猫小助手 - 悬浮AI聊天组件
+竹林养护助手 - 悬浮AI聊天组件
 使用 st.html(unsafe_allow_javascript=True) 直接注入页面 DOM（非 iframe）。
 兼容 Streamlit Cloud (HTTPS) 和本地 (HTTP) 部署。
 """
@@ -19,7 +19,7 @@ def _get_avatar_data_uri():
 
 _COMPONENT_HTML = """
 <style>
-/* ===== 熊猫小助手容器 ===== */
+/* ===== 竹林养护助手容器 ===== */
 #panda-assistant {
     position: fixed;
     top: 60px; right: 30px;
@@ -196,12 +196,12 @@ _COMPONENT_HTML = """
 <div id="panda-assistant">
     <div id="panda-chat-panel">
         <div id="panda-chat-header">
-            <span>&#x1F43C; 熊猫小助手</span>
+            <span>&#x1F43C; 竹林养护助手</span>
             <span id="panda-status-dot" title="状态"></span>
             <button id="panda-close-btn">&#x2715;</button>
         </div>
         <div id="panda-chat-messages">
-            <div class="panda-msg system">你好！我是熊猫小助手，有关大熊猫主食竹监测的问题都可以问我哦~</div>
+            <div class="panda-msg system">你好！我是竹林养护助手，有关大熊猫主食竹监测的问题都可以问我哦~</div>
         </div>
         <div id="panda-chat-input-area">
             <input type="text" id="panda-chat-input" placeholder="输入你的问题..." />
@@ -209,7 +209,7 @@ _COMPONENT_HTML = """
         </div>
     </div>
     <div id="panda-greeting">嗷呜，本熊已上线。请问有需要帮忙的吗</div>
-    <img id="panda-avatar-btn" src="%%AVATAR%%" alt="熊猫小助手" draggable="false" />
+    <img id="panda-avatar-btn" src="%%AVATAR%%" alt="竹林养护助手" draggable="false" />
 </div>
 
 <script>
@@ -220,7 +220,7 @@ _COMPONENT_HTML = """
     
     // 检查当前页面是否已初始化
     if (window[initFlag]) {
-        console.log('熊猫小助手：当前页面已初始化，跳过 - 页面ID: ' + pageId);
+        console.log('竹林养护助手：当前页面已初始化，跳过 - 页面ID: ' + pageId);
         return;
     }
     
@@ -231,13 +231,13 @@ _COMPONENT_HTML = """
         
         // 确保DOM元素存在
         if (!assistant || !avatarBtn) {
-            console.log('熊猫小助手：DOM元素未找到，延迟重试 - 页面ID: ' + pageId);
+            console.log('竹林养护助手：DOM元素未找到，延迟重试 - 页面ID: ' + pageId);
             return false;
         }
         
         // 标记为已初始化
         window[initFlag] = true;
-        console.log('熊猫小助手：初始化开始 - 页面ID: ' + pageId);
+        console.log('竹林养护助手：初始化开始 - 页面ID: ' + pageId);
         
         // 获取其他DOM元素
         var panel     = document.getElementById('panda-chat-panel');
@@ -254,8 +254,8 @@ _COMPONENT_HTML = """
         var chatHist = [];
 
         var KB = [
-            {k:['你好','嗨','hello','hi','在吗'], a:'你好呀！我是熊猫小助手，有关大熊猫主食竹监测的问题都可以问我哦~'},
-            {k:['你是谁','介绍','自我介绍','什么'], a:'我是熊猫小助手，运行在大熊猫主食竹智能监测与决策支持系统中。我可以回答关于竹林监测、大熊猫保护、遥感分析等方面的问题。'},
+            {k:['你好','嗨','hello','hi','在吗'], a:'你好呀！我是竹林养护助手，有关大熊猫主食竹监测的问题都可以问我哦~'},
+            {k:['你是谁','介绍','自我介绍','什么'], a:'我是竹林养护助手，运行在智眸识竹-基于遥感影像与随机森林的竹林资源智能监测与辅助养护系统中。我可以回答关于竹林监测、大熊猫保护、遥感分析等方面的问题。'},
             {k:['竹林','竹子','主食竹','bamboo'], a:'大熊猫的主食竹主要包括箭竹、缺苞箭竹和华西箭竹等。本系统通过遥感影像分析竹林的时空分布变化，利用双时相NDVI特征区分竹林的常绿特性。'},
             {k:['大熊猫','熊猫','panda','保护'], a:'大熊猫是我国特有的珍稀濒危物种，被誉为"国宝"。竹子占大熊猫食物来源的99%以上，因此监测竹林资源对大熊猫栖息地保护至关重要。'},
             {k:['王朗','保护区','wanglang'], a:'王朗自然保护区位于四川省绵阳市平武县，是我国最早建立的大熊猫自然保护区之一，面积约322平方公里。'},
@@ -380,7 +380,7 @@ _COMPONENT_HTML = """
                 return;
             }
             chatHist.push({role:'user', content:q});
-            var msgs = [{role:'system', content:'你是"熊猫小助手"，专注于大熊猫主食竹监测与保护的AI助手。请用简洁友好的中文回答，控制在200字以内。'}]
+            var msgs = [{role:'system', content:'你是"竹林养护助手"，专注于大熊猫主食竹监测与保护的AI助手。请用简洁友好的中文回答，控制在200字以内。'}]
                 .concat(chatHist.slice(-10));
             fetch(LLM_URL, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -410,10 +410,10 @@ _COMPONENT_HTML = """
         // 页面卸载时清理状态，确保下次访问能正确初始化
         window.addEventListener('beforeunload', function() {
             window[initFlag] = false;
-            console.log('熊猫小助手：页面卸载，清理状态 - 页面ID: ' + pageId);
+            console.log('竹林养护助手：页面卸载，清理状态 - 页面ID: ' + pageId);
         });
         
-        console.log('熊猫小助手：初始化完成 - 页面ID: ' + pageId);
+        console.log('竹林养护助手：初始化完成 - 页面ID: ' + pageId);
         return true;
     }
     
@@ -427,7 +427,7 @@ _COMPONENT_HTML = """
             if (initPandaAssistant() || retryCount >= maxRetries) {
                 clearInterval(retryInterval);
                 if (retryCount >= maxRetries) {
-                    console.log('熊猫小助手：达到最大重试次数，初始化失败 - 页面ID: ' + pageId);
+                    console.log('竹林养护助手：达到最大重试次数，初始化失败 - 页面ID: ' + pageId);
                 }
             }
         }, 500); // 每500ms重试一次
@@ -438,7 +438,7 @@ _COMPONENT_HTML = """
 
 
 def render_panda_assistant():
-    """在 Streamlit 页面中注入悬浮熊猫小助手 AI 聊天组件。"""
+    """在 Streamlit 页面中注入悬浮竹林养护助手 AI 聊天组件。"""
     avatar_uri = _get_avatar_data_uri()
     if not avatar_uri:
         return
